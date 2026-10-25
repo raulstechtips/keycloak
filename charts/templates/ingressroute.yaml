@@ -1,0 +1,33 @@
+{{- if .Values.ingressRoute.enabled }}
+{{- if not .Values.ingressRoute.hosts }}
+{{- fail "ingressRoute.hosts needs at least one entry when ingressRoute.enabled is true" }}
+{{- end }}
+{{- $keycloak := index .Subcharts "keycloak" }}
+{{- range .Values.ingressRoute.hosts }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ printf "keycloak-ingress-%s" .name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "keycloak-wrapper.labels" $ | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: {{ $.Values.ingressRoute.ingressClass | quote }}
+spec:
+  entryPoints:
+    {{- toYaml $.Values.ingressRoute.entryPoints | nindent 4 }}
+  routes:
+    - match: {{ printf "Host(`%s`)" .host | quote }}
+      kind: Rule
+      {{- with $.Values.ingressRoute.middlewares }}
+      middlewares:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      services:
+        - name: {{ include "common.names.fullname" $keycloak }}
+          port: {{ $keycloak.Values.service.ports.http }}
+  tls:
+    secretName: {{ .tlsSecretName | quote }}
+{{- end }}
+{{- end }}

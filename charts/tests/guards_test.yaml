@@ -1,0 +1,122 @@
+suite: Render guards and values schema
+templates:
+  - templates/admin-secret.yaml
+  - templates/ingressroute.yaml
+release:
+  name: keycloak
+  namespace: keycloak
+tests:
+  - it: fails when adminSecret is on without infisical.authRef.name
+    template: templates/admin-secret.yaml
+    values:
+      - ../ci/all-on-values.yaml
+    set:
+      infisical.authRef.name: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: infisical.authRef.name is required when adminSecret.enabled is true
+
+  - it: fails when adminSecret is on without infisical.authRef.namespace
+    template: templates/admin-secret.yaml
+    values:
+      - ../ci/all-on-values.yaml
+    set:
+      infisical.authRef.namespace: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: infisical.authRef.namespace is required when adminSecret.enabled is true
+
+  - it: fails when adminSecret is on without infisical.projectSlug
+    template: templates/admin-secret.yaml
+    values:
+      - ../ci/all-on-values.yaml
+    set:
+      infisical.projectSlug: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: infisical.projectSlug is required when adminSecret.enabled is true
+
+  - it: fails when adminSecret is on without infisical.environmentSlug
+    template: templates/admin-secret.yaml
+    values:
+      - ../ci/all-on-values.yaml
+    set:
+      infisical.environmentSlug: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: infisical.environmentSlug is required when adminSecret.enabled is true
+
+  - it: does not require the Infisical connection while adminSecret is off
+    template: templates/admin-secret.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: fails when the routes are on without any host
+    template: templates/ingressroute.yaml
+    set:
+      ingressRoute.enabled: true
+    asserts:
+      - failedTemplate:
+          errorMessage: ingressRoute.hosts needs at least one entry when ingressRoute.enabled is true
+
+  - it: rejects a host entry without a TLS Secret
+    template: templates/ingressroute.yaml
+    set:
+      ingressRoute.enabled: true
+      ingressRoute.hosts:
+        - name: prod
+          host: keycloak.example.test
+    asserts:
+      - failedTemplate:
+          errorMessage: |
+            values don't meet the specifications of the schema(s) in the following chart(s):
+            keycloak:
+            - ingressRoute.hosts.0: tlsSecretName is required
+
+  - it: rejects a host name that cannot be part of an object name
+    template: templates/ingressroute.yaml
+    set:
+      ingressRoute.enabled: true
+      ingressRoute.hosts:
+        - name: Prod_1
+          host: keycloak.example.test
+          tlsSecretName: fake-prod-tls
+    asserts:
+      - failedTemplate:
+          errorMessage: |
+            values don't meet the specifications of the schema(s) in the following chart(s):
+            keycloak:
+            - ingressRoute.hosts.0.name: Does not match pattern '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+
+  - it: rejects a quoted boolean for adminSecret.enabled
+    template: templates/admin-secret.yaml
+    set:
+      adminSecret.enabled: "true"
+    asserts:
+      - failedTemplate:
+          errorMessage: |
+            values don't meet the specifications of the schema(s) in the following chart(s):
+            keycloak:
+            - adminSecret.enabled: Invalid type. Expected: boolean, given: string
+
+  - it: rejects an unknown adminSecret key
+    template: templates/admin-secret.yaml
+    set:
+      adminSecret.foo: x
+    asserts:
+      - failedTemplate:
+          errorMessage: |
+            values don't meet the specifications of the schema(s) in the following chart(s):
+            keycloak:
+            - adminSecret: Additional property foo is not allowed
+
+  - it: leaves upstream values open
+    template: templates/admin-secret.yaml
+    values:
+      - ../ci/all-on-values.yaml
+    set:
+      keycloak.anyUpstreamKey: x
+    asserts:
+      - hasDocuments:
+          count: 1

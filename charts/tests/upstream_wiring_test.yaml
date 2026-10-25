@@ -1,0 +1,112 @@
+suite: Upstream keycloak wiring with chart defaults
+templates:
+  - charts/keycloak/templates/statefulset.yaml
+  - charts/keycloak/templates/configmap-env-vars.yaml
+  - charts/keycloak/templates/service.yaml
+  - charts/keycloak/templates/ingress.yaml
+release:
+  name: keycloak
+  namespace: keycloak
+tests:
+  - it: keeps the upstream StatefulSet name, image and replicas
+    template: charts/keycloak/templates/statefulset.yaml
+    asserts:
+      - isKind:
+          of: StatefulSet
+      - equal:
+          path: metadata.name
+          value: keycloak
+      - equal:
+          path: spec.replicas
+          value: 3
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: harbor.prod.raulstechtips.dev/raulstechtips/keycloak:26.3.3-debian-12-r0
+
+  - it: reads the admin password from the Secret the wrapper syncs
+    template: charts/keycloak/templates/statefulset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_BOOTSTRAP_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: keycloak-admin-credentials-secret
+                key: KEYCLOAK_ADMIN_PASSWORD
+
+  - it: reads the database credentials from the existing CNPG Secret
+    template: charts/keycloak/templates/statefulset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: pg-keycloak-database-credentials-secret
+                key: username
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pg-keycloak-database-credentials-secret
+                key: password
+
+  - it: mounts the CA that the database URL points at
+    template: charts/keycloak/templates/statefulset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: postgres-ca-cert
+            mountPath: /etc/custom-certs
+            readOnly: true
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: postgres-ca-cert
+            secret:
+              secretName: raulstechtips-internal-ca-key-pair
+              items:
+                - key: ca.crt
+                  path: postgres-ca.crt
+
+  - it: configures the database, proxy and logging
+    template: charts/keycloak/templates/configmap-env-vars.yaml
+    asserts:
+      - equal:
+          path: data.KC_DB_URL
+          value: jdbc:postgresql://pg-prod-rw.prod.svc.cluster.local:5432/keycloak?currentSchema=public&&sslmode=verify-ca&sslrootcert=/etc/custom-certs/postgres-ca.crt
+      - equal:
+          path: data.KC_PROXY_HEADERS
+          value: xforwarded
+      - equal:
+          path: data.KC_HTTP_ENABLED
+          value: "true"
+      - equal:
+          path: data.KEYCLOAK_PRODUCTION
+          value: "true"
+      - equal:
+          path: data.KC_LOG_CONSOLE_OUTPUT
+          value: json
+      - isNull:
+          path: data.KC_HOSTNAME
+
+  - it: keeps the upstream Service the IngressRoutes point at
+    template: charts/keycloak/templates/service.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: keycloak
+      - equal:
+          path: spec.ports[0].port
+          value: 80
+
+  - it: renders no upstream Ingress
+    template: charts/keycloak/templates/ingress.yaml
+    asserts:
+      - hasDocuments:
+          count: 0

@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["infisical", "adminSecret", "ingressRoute", "keycloak"],
+  "definitions": {
+    "middlewares": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "namespace": { "type": "string" }
+        }
+      }
+    }
+  },
+  "properties": {
+    "infisical": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authRef", "projectSlug", "environmentSlug"],
+      "properties": {
+        "authRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "namespace"],
+          "properties": {
+            "name": { "type": "string" },
+            "namespace": { "type": "string" }
+          }
+        },
+        "projectSlug": { "type": "string" },
+        "environmentSlug": { "type": "string" }
+      }
+    },
+    "adminSecret": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "secretName", "secretPath", "refreshInterval", "keys"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "secretName": { "type": "string", "minLength": 1 },
+        "secretPath": { "type": "string", "minLength": 1 },
+        "refreshInterval": { "type": "string", "minLength": 1 },
+        "keys": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^[-._a-zA-Z0-9]+$" },
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "ingressRoute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "entryPoints", "ingressClass", "middlewares", "hosts"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "entryPoints": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "ingressClass": { "type": "string", "minLength": 1 },
+        "middlewares": { "$ref": "#/definitions/middlewares" },
+        "hosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "host", "tlsSecretName"],
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$" },
+              "host": { "type": "string", "minLength": 1 },
+              "tlsSecretName": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "keycloak": { "type": "object" }
+  }
+}

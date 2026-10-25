@@ -1,0 +1,22 @@
+# Every wrapper feature on, with dummy non-secret strings. Used by helm lint, kubeconform and the unit tests.
+infisical:
+  authRef:
+    name: fake-auth
+    namespace: fake-auth-namespace
+  projectSlug: fake-project
+  environmentSlug: fake-env
+adminSecret:
+  enabled: true
+  secretPath: /keycloak/fake-admin
+ingressRoute:
+  enabled: true
+  middlewares:
+    - name: default-headers
+      namespace: default
+  hosts:
+    - name: prod
+      host: keycloak.example.test
+      tlsSecretName: fake-prod-tls
+    - name: live
+      host: keycloak-live.example.test
+      tlsSecretName: fake-live-tls
