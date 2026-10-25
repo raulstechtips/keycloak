@@ -1,4 +1,4 @@
-# Wrapper chart defaults. Environment values (database, CA, hosts, Infisical connection) live in cluster-config.
+# Wrapper chart defaults. Environment values (hosts, Infisical connection) live in cluster-config.
 # This file is not templated. YAML anchors only work within one file.
 
 # The wrapper's Infisical operator connection (same shape as the infisical and jenkins charts).
@@ -102,6 +102,27 @@ keycloak:
         limits:
           cpu: 200m
           memory: 196Mi
-  # Bundled PostgreSQL off. The database is external; cluster-config sets externalDatabase.
+  # CA for verify-ca on the database connection.
+  extraVolumes:
+    - name: postgres-ca-cert
+      secret:
+        secretName: raulstechtips-internal-ca-key-pair
+        items:
+          - key: ca.crt
+            path: postgres-ca.crt
+  extraVolumeMounts:
+    - name: postgres-ca-cert
+      mountPath: /etc/custom-certs
+      readOnly: true
+  # Bundled PostgreSQL off. The database is the prod CNPG cluster.
   postgresql:
     enabled: false
+  # The credentials and CA Secrets are managed outside this chart and must already exist.
+  externalDatabase:
+    host: pg-prod-rw.prod.svc.cluster.local
+    user: pg-keycloak-admin
+    database: keycloak
+    existingSecret: pg-keycloak-database-credentials-secret
+    existingSecretUserKey: username
+    existingSecretPasswordKey: password
+    extraParams: "&sslmode=verify-ca&sslrootcert=/etc/custom-certs/postgres-ca.crt"

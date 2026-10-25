@@ -1,5 +1,5 @@
 # Dev values for the keycloak wrapper chart (harbor.prod.raulstechtips.dev/raulstechtips/charts/keycloak).
-# No secret values here. The DB credentials and CA Secrets are managed outside this chart and must already exist.
+# No secret values here. Database and CA wiring are chart defaults.
 # Infisical connection for the admin password sync (shared auth from DEVSECOPS-153).
 infisical:
   authRef:
@@ -23,25 +23,3 @@ ingressRoute:
     - name: live
       host: keycloak.raulstechtips.dev
       tlsSecretName: live-raulstechtips-tls
-# Values for the upstream chart (used as-is, no alias).
-keycloak:
-  # CA for verify-ca on the database connection.
-  extraVolumes:
-    - name: postgres-ca-cert
-      secret:
-        secretName: raulstechtips-internal-ca-key-pair
-        items:
-          - key: ca.crt
-            path: postgres-ca.crt
-  extraVolumeMounts:
-    - name: postgres-ca-cert
-      mountPath: /etc/custom-certs
-      readOnly: true
-  externalDatabase:
-    host: pg-prod-rw.prod.svc.cluster.local
-    user: pg-keycloak-admin
-    database: keycloak
-    existingSecret: pg-keycloak-database-credentials-secret
-    existingSecretUserKey: username
-    existingSecretPasswordKey: password
-    extraParams: "&sslmode=verify-ca&sslrootcert=/etc/custom-certs/postgres-ca.crt"
