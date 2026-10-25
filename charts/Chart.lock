@@ -1,0 +1,6 @@
+dependencies:
+- name: keycloak
+  repository: oci://harbor.prod.raulstechtips.dev/raulstechtips/bitnami/charts
+  version: 25.2.0
+digest: sha256:937222529d0ddf2982048c90b8ab17691f2f31e7f2076a9fa7306dcc9a168f08
+generated: "2026-10-25T17:20:39.261565-04:00"
