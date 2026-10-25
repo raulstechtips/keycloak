@@ -1,0 +1,77 @@
+suite: Traefik IngressRoutes
+templates:
+  - templates/ingressroute.yaml
+release:
+  name: keycloak
+  namespace: keycloak
+tests:
+  - it: renders nothing by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders one route per host
+    values:
+      - ../ci/all-on-values.yaml
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  - it: routes the first host to the upstream Service
+    values:
+      - ../ci/all-on-values.yaml
+    documentIndex: 0
+    asserts:
+      - isKind:
+          of: IngressRoute
+      - equal:
+          path: metadata.name
+          value: keycloak-ingress-prod
+      - equal:
+          path: metadata.annotations["kubernetes.io/ingress.class"]
+          value: traefik-external
+      - equal:
+          path: spec.entryPoints
+          value:
+            - websecure
+      - equal:
+          path: spec.routes[0].match
+          value: Host(`keycloak.example.test`)
+      - equal:
+          path: spec.routes[0].middlewares
+          value:
+            - name: default-headers
+              namespace: default
+      - equal:
+          path: spec.routes[0].services
+          value:
+            - name: keycloak
+              port: 80
+      - equal:
+          path: spec.tls.secretName
+          value: fake-prod-tls
+
+  - it: gives the second host its own name and TLS Secret
+    values:
+      - ../ci/all-on-values.yaml
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: metadata.name
+          value: keycloak-ingress-live
+      - equal:
+          path: spec.routes[0].match
+          value: Host(`keycloak-live.example.test`)
+      - equal:
+          path: spec.tls.secretName
+          value: fake-live-tls
+
+  - it: leaves out middlewares when none are set
+    values:
+      - ../ci/all-on-values.yaml
+    set:
+      ingressRoute.middlewares: []
+    documentIndex: 0
+    asserts:
+      - isNull:
+          path: spec.routes[0].middlewares
