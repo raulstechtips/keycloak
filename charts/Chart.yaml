@@ -2,7 +2,7 @@ apiVersion: v2
 name: keycloak
 description: "Keycloak wrapper chart: upstream Bitnami keycloak plus the admin password sync and Traefik IngressRoutes."
 type: application
-version: 0.0.0
+version: 0.1.0-main-c2020e8-2
 dependencies:
   - name: keycloak
     version: 25.2.0
