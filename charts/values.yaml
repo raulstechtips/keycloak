@@ -52,7 +52,7 @@ global:
 # Only keys that differ from the upstream 25.2.0 defaults are listed.
 keycloak:
   image:
-    registry: harbor.prod.raulstechtips.dev
+    registry: harbor.dev.raulstechtips.dev
     repository: raulstechtips/keycloak
     tag: 26.3.3-debian-12-r0
   # Pass credentials as env vars instead of mounted files.

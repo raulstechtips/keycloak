@@ -7,4 +7,4 @@ dependencies:
   - name: keycloak
     version: 25.2.0
     # Byte-identical copy of registry-1.docker.io/bitnamicharts/keycloak:25.2.0.
-    repository: oci://harbor.prod.raulstechtips.dev/raulstechtips/bitnami/charts
+    repository: oci://harbor.dev.raulstechtips.dev/raulstechtips/bitnami/charts

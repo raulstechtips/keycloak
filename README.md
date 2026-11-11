@@ -5,7 +5,7 @@ Helm chart that installs Keycloak in the cluster.
 ## Purpose
 
 The chart wraps the Bitnami `keycloak` chart `25.2.0` as a dependency. We use it only through values and never fork its templates.
-The dependency comes from our Harbor mirror `oci://harbor.prod.raulstechtips.dev/raulstechtips/bitnami/charts`, a byte-identical copy of `registry-1.docker.io/bitnamicharts/keycloak:25.2.0`.
+The dependency comes from our Harbor mirror `oci://harbor.dev.raulstechtips.dev/raulstechtips/bitnami/charts`, a byte-identical copy of `registry-1.docker.io/bitnamicharts/keycloak:25.2.0`.
 
 The wrapper owns:
 
@@ -49,8 +49,8 @@ Any `keycloak.*` key goes straight to the upstream chart.
 1. Mirror the new upstream chart into Harbor:
    ```sh
    helm pull oci://registry-1.docker.io/bitnamicharts/keycloak --version <version>
-   helm push keycloak-<version>.tgz oci://harbor.prod.raulstechtips.dev/raulstechtips/bitnami/charts
+   helm push keycloak-<version>.tgz oci://harbor.dev.raulstechtips.dev/raulstechtips/bitnami/charts
    ```
 2. Bump the dependency version in `charts/Chart.yaml` and run `helm dependency update charts`.
-3. Set `keycloak.image.tag` in `charts/values.yaml` (the image is mirrored to `harbor.prod.raulstechtips.dev/raulstechtips/keycloak`).
+3. Set `keycloak.image.tag` in `charts/values.yaml` (the image is mirrored to `harbor.dev.raulstechtips.dev/raulstechtips/keycloak`).
 4. Merge, then sync the Application when you're ready.
