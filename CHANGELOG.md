@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
+- [DEVSECOPS-197](https://raulstechtips.atlassian.net/browse/DEVSECOPS-197) 
+    - Updated harbor from prod to dev
 
 ### Fixed
 
