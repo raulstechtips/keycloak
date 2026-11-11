@@ -21,7 +21,7 @@ tests:
           value: 3
       - equal:
           path: spec.template.spec.containers[0].image
-          value: harbor.prod.raulstechtips.dev/raulstechtips/keycloak:26.3.3-debian-12-r0
+          value: harbor.dev.raulstechtips.dev/raulstechtips/keycloak:26.3.3-debian-12-r0
 
   - it: reads the admin password from the Secret the wrapper syncs
     template: charts/keycloak/templates/statefulset.yaml
