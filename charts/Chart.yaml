@@ -2,7 +2,7 @@ apiVersion: v2
 name: keycloak
 description: "Keycloak wrapper chart: upstream codecentric keycloakx with the official Keycloak image, plus the admin password sync and Traefik IngressRoutes."
 type: application
-version: 0.2.0-main-cd9e0f4-5
+version: 0.2.0-main-742a5d3-6
 dependencies:
   - name: keycloakx
     # Alias keeps the values key `keycloak:` and the object names (StatefulSet `keycloak`).
