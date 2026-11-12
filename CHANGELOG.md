@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
-    - Updated harbor from prod to dev ([DEVSECOPS-197](https://raulstechtips.atlassian.net/browse/DEVSECOPS-197))
+- Updated harbor from prod to dev ([DEVSECOPS-197](https://raulstechtips.atlassian.net/browse/DEVSECOPS-197))
+- Replaced the Bitnami chart and image with the codecentric keycloakx chart 7.4.0 and the official Keycloak 26.3.3 image; same database and settings, Service is now keycloak-http ([DEVSECOPS-198](https://raulstechtips.atlassian.net/browse/DEVSECOPS-198))
 
 ### Fixed
 
