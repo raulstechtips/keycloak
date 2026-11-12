@@ -1,14 +1,14 @@
-suite: Upstream keycloak wiring with chart defaults
+suite: Upstream keycloakx wiring with chart defaults
 templates:
   - charts/keycloak/templates/statefulset.yaml
-  - charts/keycloak/templates/configmap-env-vars.yaml
-  - charts/keycloak/templates/service.yaml
+  - charts/keycloak/templates/service-http.yaml
+  - charts/keycloak/templates/networkpolicy.yaml
   - charts/keycloak/templates/ingress.yaml
 release:
   name: keycloak
   namespace: keycloak
 tests:
-  - it: keeps the upstream StatefulSet name, image and replicas
+  - it: keeps the StatefulSet name and replicas, with the official image in production mode
     template: charts/keycloak/templates/statefulset.yaml
     asserts:
       - isKind:
@@ -21,11 +21,20 @@ tests:
           value: 3
       - equal:
           path: spec.template.spec.containers[0].image
-          value: harbor.dev.raulstechtips.dev/raulstechtips/keycloak:26.3.3-debian-12-r0
+          value: quay.io/keycloak/keycloak:26.3.3
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value:
+            - start
 
   - it: reads the admin password from the Secret the wrapper syncs
     template: charts/keycloak/templates/statefulset.yaml
     asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_BOOTSTRAP_ADMIN_USERNAME
+            value: admin
       - contains:
           path: spec.template.spec.containers[0].env
           content:
@@ -74,36 +83,129 @@ tests:
                 - key: ca.crt
                   path: postgres-ca.crt
 
-  - it: configures the database, proxy and logging
-    template: charts/keycloak/templates/configmap-env-vars.yaml
+  - it: configures the database, path, proxy, hostname and logging like the old deployment
+    template: charts/keycloak/templates/statefulset.yaml
     asserts:
-      - equal:
-          path: data.KC_DB_URL
-          value: jdbc:postgresql://pg-prod-rw.prod.svc.cluster.local:5432/keycloak?currentSchema=public&&sslmode=verify-ca&sslrootcert=/etc/custom-certs/postgres-ca.crt
-      - equal:
-          path: data.KC_PROXY_HEADERS
-          value: xforwarded
-      - equal:
-          path: data.KC_HTTP_ENABLED
-          value: "true"
-      - equal:
-          path: data.KEYCLOAK_PRODUCTION
-          value: "true"
-      - equal:
-          path: data.KC_LOG_CONSOLE_OUTPUT
-          value: json
-      - isNull:
-          path: data.KC_HOSTNAME
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_DB
+            value: postgres
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_DB_URL_HOST
+            value: pg-prod-rw.prod.svc.cluster.local
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_DB_URL_DATABASE
+            value: keycloak
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_DB_URL_PROPERTIES
+            value: ?currentSchema=public&sslmode=verify-ca&sslrootcert=/etc/custom-certs/postgres-ca.crt
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_DB_URL
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_HTTP_RELATIVE_PATH
+            value: /
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_PROXY_HEADERS
+            value: xforwarded
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_HTTP_ENABLED
+            value: "true"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_CACHE_STACK
+            value: jdbc-ping
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_HOSTNAME_STRICT
+            value: "false"
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_HOSTNAME
+          any: true
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_LOG_CONSOLE_OUTPUT
+            value: json
 
-  - it: keeps the upstream Service the IngressRoutes point at
-    template: charts/keycloak/templates/service.yaml
+  - it: builds the database URL properties from customPostgresCA, one key at a time
+    template: charts/keycloak/templates/statefulset.yaml
+    set:
+      keycloak.customPostgresCA.customVerifySslMode: verify-full
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KC_DB_URL_PROPERTIES
+            value: ?currentSchema=public&sslmode=verify-full&sslrootcert=/etc/custom-certs/postgres-ca.crt
+
+  - it: keeps the HTTP Service the IngressRoutes point at, without an HTTPS port
+    template: charts/keycloak/templates/service-http.yaml
     asserts:
       - equal:
           path: metadata.name
-          value: keycloak
+          value: keycloak-http
+      - contains:
+          path: spec.ports
+          content:
+            name: http
+            port: 80
+            targetPort: http
+            protocol: TCP
+      - notContains:
+          path: spec.ports
+          content:
+            name: https
+          any: true
+
+  - it: allows HTTP and the JGroups port from anywhere, and all egress
+    template: charts/keycloak/templates/networkpolicy.yaml
+    asserts:
+      - isKind:
+          of: NetworkPolicy
       - equal:
-          path: spec.ports[0].port
-          value: 80
+          path: spec.policyTypes
+          value:
+            - Ingress
+            - Egress
+      - equal:
+          path: spec.ingress[0].from
+          value:
+            - namespaceSelector: {}
+            - ipBlock:
+                cidr: 0.0.0.0/0
+      - equal:
+          path: spec.ingress[0].ports
+          value:
+            - protocol: TCP
+              port: 8080
+            - protocol: TCP
+              port: 8443
+            - protocol: TCP
+              port: 7800
+      - equal:
+          path: spec.egress
+          value:
+            - {}
 
   - it: renders no upstream Ingress
     template: charts/keycloak/templates/ingress.yaml

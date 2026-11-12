@@ -45,7 +45,7 @@ tests:
       - equal:
           path: spec.routes[0].services
           value:
-            - name: keycloak
+            - name: keycloak-http
               port: 80
       - equal:
           path: spec.tls.secretName
