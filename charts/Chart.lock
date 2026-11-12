@@ -1,6 +1,6 @@
 dependencies:
-- name: keycloak
-  repository: oci://harbor.dev.raulstechtips.dev/raulstechtips/bitnami/charts
-  version: 25.2.0
-digest: sha256:9efd2481407ab56837eae6d8d53c285e329e47f8ed264a9c7feb92f3e9a56f1d
-generated: "2026-11-11T15:11:36.575752-05:00"
+- name: keycloakx
+  repository: oci://ghcr.io/codecentric/helm-charts
+  version: 7.4.0
+digest: sha256:1b9a5586de1741e9f51acbe48fd9796cbd84ba24d3bf2c09114f2ff850342e00
+generated: "2026-11-12T13:54:40.125614-05:00"

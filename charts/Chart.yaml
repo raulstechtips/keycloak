@@ -1,10 +1,11 @@
 apiVersion: v2
 name: keycloak
-description: "Keycloak wrapper chart: upstream Bitnami keycloak plus the admin password sync and Traefik IngressRoutes."
+description: "Keycloak wrapper chart: upstream codecentric keycloakx with the official Keycloak image, plus the admin password sync and Traefik IngressRoutes."
 type: application
 version: 0.2.0-main-cd9e0f4-5
 dependencies:
-  - name: keycloak
-    version: 25.2.0
-    # Byte-identical copy of registry-1.docker.io/bitnamicharts/keycloak:25.2.0.
-    repository: oci://harbor.dev.raulstechtips.dev/raulstechtips/bitnami/charts
+  - name: keycloakx
+    # Alias keeps the values key `keycloak:` and the object names (StatefulSet `keycloak`).
+    alias: keycloak
+    version: 7.4.0
+    repository: oci://ghcr.io/codecentric/helm-charts
